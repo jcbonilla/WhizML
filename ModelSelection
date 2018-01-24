@@ -1,0 +1,76 @@
+(define source1
+  (create-and-wait-source {"remote" "https://s3.amazonaws.com/oscartest/predict/clean_csvs/demoschoolRaw.csv"
+                           "name" "School-raw-data"}))
+                           
+(define dataset1
+  (create-and-wait-dataset {"source" source1
+                            "name" "School-dataset"}))
+                          
+(define dataset2
+ (create-and-wait-dataset {"origin_dataset" dataset1
+                           "sample_rate" 0.75
+                           "name" "school_training_75"
+                           "seed" "1234"}))
+                           
+(define dataset3
+  (create-and-wait-dataset {"origin_dataset" dataset1
+                            "sample_rate" 0.75
+                            "name" "school_test_22"
+                            "seed" "1234"
+                            "out_of_bag" true
+                            "range" [1 11517]}))                             
+                          
+(define model1
+  (create-and-wait-ensemble {"dataset" dataset2
+                             "number_of_models" 66
+                             "balance_objective" true
+                             "name" "model1-66"
+                             "boosting"
+                             {"early_holdout" 0
+                              "early_out_of_bag" true
+                              "iterations" 33
+                              "learning_rate" 0.1
+                              "step_out_of_bag" false}
+                             "stat_pruning" false
+                             "ensemble_sample"
+                             {"rate" 1.0
+                              "replacement" true
+                              "seed" "ae42932605754cf280fd0b75d65e05c3"}}))
+                              
+(define model2
+  (create-and-wait-ensemble {"dataset" dataset2
+                             "number_of_models" 5
+                             "balance_objective" true
+                             "name" "model2-66"
+                             "boosting"
+                             {"early_holdout" 0
+                              "early_out_of_bag" true
+                              "iterations" 30
+                              "learning_rate" 0.05
+                              "step_out_of_bag" false}
+                             "stat_pruning" false
+                             "ensemble_sample"
+                             {"rate" 1.0
+                              "replacement" true
+                              "seed" "ae42932605754cf280fd0b75d65e05c3"}}))
+                              
+(define evaluation1
+  (create-and-wait-evaluation {"model" model1
+                               "dataset" dataset3
+                               "description" "eval for model 1"
+                               "name" "eval1"}))
+                               
+(define evaluation2
+  (create-and-wait-evaluation {"model" model2
+                               "dataset" dataset3
+                               "description" "eval for model 2"
+                               "name" "eval2"}))
+                               
+(define f-measure1
+  (get-in (fetch (wait evaluation1)) ["result" "model" "average_f_measure"]))
+
+(define f-measure2
+  (get-in (fetch (wait evaluation2)) ["result" "model" "average_f_measure"]))
+
+(define model-selection
+  (if (> f-measure1 f-measure2)  model1 model2))  
