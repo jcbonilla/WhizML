@@ -1,5 +1,5 @@
 (define source1
-  (create-and-wait-source {"remote" "https://s3.amazonaws.com/oscartest/predict/clean_csvs/demoschoolRaw.csv"
+  (create-and-wait-source {"remote" source-url
                            "name" "School-raw-data"}))
                            
 (define dataset1
@@ -74,3 +74,6 @@
 
 (define model-selection
   (if (> f-measure1 f-measure2)  model1 model2))  
+  
+;; Compute the result of the script execution
+(define output model-selection)
